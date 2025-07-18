@@ -3,13 +3,8 @@ import openai
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 
-# Cargar variables de entorno (importante para la API key)
 load_dotenv()
-
-# Inicializar la aplicación Flask
 app = Flask(__name__)
-
-# Configurar la API Key de OpenAI desde las variables de entorno
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # --- RUTAS DE LA APLICACIÓN ---
@@ -32,7 +27,6 @@ def chat():
         return jsonify({"error": "La pregunta no puede estar vacía."}), 400
 
     try:
-        # Construcción del Prompt para guiar a la IA
         prompt_sistema = f"""
         Actúa como un asistente legal informativo para México. Tu propósito es ofrecer orientación general y educativa sobre posibles acciones a tomar.
         NO ofreces asesoramiento legal formal y siempre debes recordarle al usuario que consulte a un abogado certificado.
@@ -46,7 +40,6 @@ def chat():
         Finaliza SIEMPRE con la siguiente advertencia: 'Recuerda, esta es una orientación informativa y no sustituye la consulta con un abogado profesional.'
         """
 
-        # Llamada a la API de OpenAI
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -64,14 +57,13 @@ def chat():
         print(f"Error al llamar a la API de OpenAI: {e}")
         return jsonify({"error": "Hubo un problema al contactar al asistente. Inténtalo de nuevo."}), 500
 
-@app.route('/propellerads.txt')
-def serve_verification_file():
-    """ Sirve el archivo de verificación para la monetización. """
-    # Asegúrate de que tu archivo de verificación esté en la carpeta 'static'
-    return send_from_directory('static', 'propellerads.txt')
+# --- RUTA DE VERIFICACIÓN (LA IMPORTANTE) ---
+@app.route('/monetization-sw.js') # <-- DEBE COINCIDIR CON EL NOMBRE DE TU ARCHIVO
+def serve_service_worker():
+    """ Sirve el archivo Service Worker desde la carpeta static. """
+    return send_from_directory('static', 'monetization-sw.js')
+
 
 # --- INICIO DE LA APLICACIÓN ---
-
 if __name__ == "__main__":
-    # Esto es solo para pruebas locales. Render usará Gunicorn.
     app.run(debug=True)
