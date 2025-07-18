@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente Legal Informativo</title>
+    <style>
+        /* Estilos básicos para una mejor presentación */
+        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; line-height: 1.6; }
+        .disclaimer { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input, textarea, button { padding: 10px; font-size: 1em; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:disabled { background-color: #cccccc; }
+        #chatbox { margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+        .user-message { text-align: right; color: #0056b3; }
+        .assistant-message { background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Asistente Legal Informativo ⚖️</h1>
+
+    <div class="disclaimer">
+        <strong>⚠️ Aviso Importante:</strong> Este es un servicio informativo automatizado. Las respuestas son generadas por una inteligencia artificial y se basan únicamente en la información proporcionada. <strong>NO sustituye el asesoramiento de un abogado certificado.</strong> Su propósito es ofrecer orientación general sobre posibles acciones a tomar.
+    </div>
+
+    <form id="legal-form">
+        <label for="pais">País:</label>
+        <input type="text" id="pais" name="pais" value="México" required>
+
+        <label for="estado">Estado:</label>
+        <input type="text" id="estado" name="estado" placeholder="Ej: Jalisco" required>
+
+        <label for="municipio">Municipio/Ciudad:</label>
+        <input type="text" id="municipio" name="municipio" placeholder="Ej: Guadalajara" required>
+
+        <label for="pregunta">Escribe tu duda legal aquí:</label>
+        <textarea id="pregunta" name="pregunta" rows="4" required></textarea>
+
+        <button type="submit" id="submit-button">Enviar Consulta</button>
+    </form>
+
+    <div id="chatbox">
+        <p>El historial de tu conversación aparecerá aquí.</p>
+    </div>
+
+    <script>
+        const form = document.getElementById('legal-form');
+        const submitButton = document.getElementById('submit-button');
+        const chatbox = document.getElementById('chatbox');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Evita que la página se recargue
+
+            const formData = new FormData(form);
+            const data = {
+                pais: formData.get('pais'),
+                estado: formData.get('estado'),
+                municipio: formData.get('municipio'),
+                pregunta: formData.get('pregunta')
+            };
+            
+            // Añadir la pregunta del usuario al chat
+            addMessage(data.pregunta, 'user');
+            
+            // Deshabilitar botón y mostrar carga
+            submitButton.disabled = true;
+            submitButton.textContent = 'Procesando...';
+            addMessage('...', 'assistant');
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                // Quitar el mensaje de carga
+                chatbox.removeChild(chatbox.lastChild);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error en la respuesta del servidor.');
+                }
+
+                const result = await response.json();
+                addMessage(result.respuesta, 'assistant');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}`, 'assistant');
+            } finally {
+                // Habilitar el botón nuevamente
+                submitButton.disabled = false;
+                submitButton.textContent = 'Enviar Consulta';
+                form.reset(); // Opcional: limpiar el formulario
+            }
+        });
+
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            const textElement = document.createElement('p');
+            textElement.textContent = text;
+            
+            if (sender === 'user') {
+                messageElement.className = 'user-message';
+            } else {
+                messageElement.className = 'assistant-message';
+            }
+            
+            messageElement.appendChild(textElement);
+            chatbox.appendChild(messageElement);
+            chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll al final
+        }
+    </script>
+
+</body>
+</html>
