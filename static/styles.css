@@ -154,6 +154,7 @@ button:disabled {
     justify-content: center;
     align-items: center;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 /* Mensaje del Asistente (Izquierda) */
@@ -188,7 +189,8 @@ button:disabled {
     display: none; /* Oculto por defecto */
     align-items: center;
     gap: 5px;
-    padding: 10px;
+    padding: 0px;
+    margin: 0;
 }
 .typing-indicator .dot {
     width: 8px;
@@ -213,11 +215,15 @@ button:disabled {
     .container {
         border-radius: 0;
         min-height: 100vh;
+        box-shadow: none;
     }
     form {
         grid-template-columns: 1fr;
     }
     main {
         padding: 16px;
+    }
+    .message {
+        max-width: 90%;
     }
 }

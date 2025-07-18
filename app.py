@@ -1,6 +1,6 @@
 import os
 import openai
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 
 # Cargar variables de entorno (importante para la API key)
@@ -10,8 +10,9 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configurar la API Key de OpenAI desde las variables de entorno
-# ¡NUNCA escribas tu API key directamente en el código!
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# --- RUTAS DE LA APLICACIÓN ---
 
 @app.route("/")
 def index():
@@ -31,8 +32,7 @@ def chat():
         return jsonify({"error": "La pregunta no puede estar vacía."}), 400
 
     try:
-        # --- Construcción del Prompt (¡Esta es la parte clave!) ---
-        # Creamos un prompt detallado para guiar a la IA.
+        # Construcción del Prompt para guiar a la IA
         prompt_sistema = f"""
         Actúa como un asistente legal informativo para México. Tu propósito es ofrecer orientación general y educativa sobre posibles acciones a tomar.
         NO ofreces asesoramiento legal formal y siempre debes recordarle al usuario que consulte a un abogado certificado.
@@ -48,13 +48,13 @@ def chat():
 
         # Llamada a la API de OpenAI
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo", # o "gpt-4" si tienes acceso
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": pregunta}
             ],
-            max_tokens=200,  # Límite estricto de la longitud de la respuesta
-            temperature=0.5, # Un valor más bajo para respuestas más directas y menos creativas
+            max_tokens=200,
+            temperature=0.5,
         )
         
         respuesta_ia = response.choices[0].message.content.strip()
@@ -63,6 +63,14 @@ def chat():
     except Exception as e:
         print(f"Error al llamar a la API de OpenAI: {e}")
         return jsonify({"error": "Hubo un problema al contactar al asistente. Inténtalo de nuevo."}), 500
+
+@app.route('/propellerads.txt')
+def serve_verification_file():
+    """ Sirve el archivo de verificación para la monetización. """
+    # Asegúrate de que tu archivo de verificación esté en la carpeta 'static'
+    return send_from_directory('static', 'propellerads.txt')
+
+# --- INICIO DE LA APLICACIÓN ---
 
 if __name__ == "__main__":
     # Esto es solo para pruebas locales. Render usará Gunicorn.
