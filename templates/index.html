@@ -3,55 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asistente Legal Informativo</title>
-    <style>
-        /* Estilos básicos para una mejor presentación */
-        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; line-height: 1.6; }
-        .disclaimer { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        input, textarea, button { padding: 10px; font-size: 1em; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
-        button:disabled { background-color: #cccccc; }
-        #chatbox { margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
-        .user-message { text-align: right; color: #0056b3; }
-        .assistant-message { background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 5px; }
-    </style>
+    <title>Asistente Legal IA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <h1>Asistente Legal Informativo ⚖️</h1>
+    <div class="container">
+        <header>
+            <h1>Asistente Legal Informativo ⚖️</h1>
+        </header>
 
-    <div class="disclaimer">
-        <strong>⚠️ Aviso Importante:</strong> Este es un servicio informativo automatizado. Las respuestas son generadas por una inteligencia artificial y se basan únicamente en la información proporcionada. <strong>NO sustituye el asesoramiento de un abogado certificado.</strong> Su propósito es ofrecer orientación general sobre posibles acciones a tomar.
-    </div>
+        <main>
+            <div class="disclaimer">
+                <strong>⚠️ Aviso Importante:</strong> Este es un servicio informativo automatizado. <strong>NO sustituye el asesoramiento de un abogado certificado.</strong> Su propósito es ofrecer orientación general.
+            </div>
 
-    <form id="legal-form">
-        <label for="pais">País:</label>
-        <input type="text" id="pais" name="pais" value="México" required>
+            <div id="chatbox">
+                </div>
 
-        <label for="estado">Estado:</label>
-        <input type="text" id="estado" name="estado" placeholder="Ej: Jalisco" required>
+             <div class="message assistant-message typing-indicator" id="typing-indicator">
+                <div class="avatar">IA</div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
 
-        <label for="municipio">Municipio/Ciudad:</label>
-        <input type="text" id="municipio" name="municipio" placeholder="Ej: Guadalajara" required>
 
-        <label for="pregunta">Escribe tu duda legal aquí:</label>
-        <textarea id="pregunta" name="pregunta" rows="4" required></textarea>
+            <form id="legal-form">
+                <div class="full-width">
+                    <label for="pregunta">Escribe tu duda legal específica:</label>
+                    <textarea id="pregunta" name="pregunta" rows="3" required placeholder="Ej: ¿Qué debo hacer si mi arrendador no quiere devolverme el depósito?"></textarea>
+                </div>
+                
+                <div>
+                    <label for="estado">Estado:</label>
+                    <input type="text" id="estado" name="estado" placeholder="Ej: Jalisco" required>
+                </div>
 
-        <button type="submit" id="submit-button">Enviar Consulta</button>
-    </form>
+                <div>
+                    <label for="municipio">Municipio/Ciudad:</label>
+                    <input type="text" id="municipio" name="municipio" placeholder="Ej: Guadalajara" required>
+                </div>
 
-    <div id="chatbox">
-        <p>El historial de tu conversación aparecerá aquí.</p>
+                <input type="hidden" id="pais" name="pais" value="México">
+
+                <button type="submit" id="submit-button">Enviar Consulta</button>
+            </form>
+        </main>
     </div>
 
     <script>
         const form = document.getElementById('legal-form');
         const submitButton = document.getElementById('submit-button');
         const chatbox = document.getElementById('chatbox');
+        const typingIndicator = document.getElementById('typing-indicator');
 
         form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Evita que la página se recargue
+            event.preventDefault();
 
             const formData = new FormData(form);
             const data = {
@@ -60,14 +75,16 @@
                 municipio: formData.get('municipio'),
                 pregunta: formData.get('pregunta')
             };
-            
-            // Añadir la pregunta del usuario al chat
+
+            if (!data.pregunta.trim()) return;
+
             addMessage(data.pregunta, 'user');
-            
-            // Deshabilitar botón y mostrar carga
+            form.reset(); // Limpia el formulario inmediatamente
+
             submitButton.disabled = true;
             submitButton.textContent = 'Procesando...';
-            addMessage('...', 'assistant');
+            typingIndicator.style.display = 'flex'; // Muestra el indicador de "escribiendo"
+            chatbox.scrollTop = chatbox.scrollHeight;
 
             try {
                 const response = await fetch('/chat', {
@@ -75,9 +92,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
-                // Quitar el mensaje de carga
-                chatbox.removeChild(chatbox.lastChild);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -89,30 +103,37 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                addMessage(`Error: ${error.message}`, 'assistant');
+                addMessage(`Lo siento, ocurrió un error: ${error.message}`, 'assistant');
             } finally {
-                // Habilitar el botón nuevamente
                 submitButton.disabled = false;
                 submitButton.textContent = 'Enviar Consulta';
-                form.reset(); // Opcional: limpiar el formulario
+                typingIndicator.style.display = 'none'; // Oculta el indicador
             }
         });
 
         function addMessage(text, sender) {
-            const messageElement = document.createElement('div');
-            const textElement = document.createElement('p');
-            textElement.textContent = text;
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message ${sender}-message`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = (sender === 'user') ? 'TÚ' : 'IA';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.textContent = text;
             
-            if (sender === 'user') {
-                messageElement.className = 'user-message';
-            } else {
-                messageElement.className = 'assistant-message';
-            }
+            messageWrapper.appendChild(avatar);
+            messageWrapper.appendChild(messageContent);
+            chatbox.appendChild(messageWrapper);
             
-            messageElement.appendChild(textElement);
-            chatbox.appendChild(messageElement);
-            chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll al final
+            chatbox.scrollTop = chatbox.scrollHeight;
         }
+
+        // Mensaje inicial de bienvenida
+        window.onload = () => {
+             addMessage('Bienvenido. Por favor, completa los campos de abajo y escribe tu consulta. Estoy aquí para ofrecerte una orientación legal informativa.', 'assistant');
+        };
     </script>
 
 </body>
