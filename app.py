@@ -2,6 +2,8 @@ import os
 import openai
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from dotenv import load_dotenv
+from flask import render_template
+
 
 load_dotenv()
 app = Flask(__name__)
@@ -28,26 +30,37 @@ def chat():
 
     try:
         prompt_sistema = f"""
-        Actúa como un asistente legal informativo para México. Tu propósito es ofrecer orientación general y educativa sobre posibles acciones a tomar.
-        NO ofreces asesoramiento legal formal y siempre debes recordarle al usuario que consulte a un abogado certificado.
-        La consulta del usuario se enmarca en la siguiente jurisdicción:
-        - País: {pais}
-        - Estado: {estado}
-        - Municipio/Ciudad: {municipio}
+Eres un asistente legal de inteligencia artificial, experto en leyes mexicanas y altamente capacitado en múltiples ramas del Derecho (civil, penal, laboral, administrativo, fiscal, familiar, etc.).
+Tu función es exclusivamente brindar una orientación informativa general, **NO ofreces asesoría jurídica personalizada ni sustituyes la opinión de un abogado certificado**.
 
-        Basa tu respuesta en la legislación aplicable a esta ubicación, si es posible.
-        Mantén tus respuestas concisas, claras y no excedas los 200 tokens.
-        Finaliza SIEMPRE con la siguiente advertencia: 'Recuerda, esta es una orientación informativa y no sustituye la consulta con un abogado profesional.'
-        """
+La consulta del usuario se contextualiza en la siguiente ubicación:
+- País: {pais}
+- Estado: {estado}
+- Municipio: {municipio}
+
+Instrucciones clave que NO debes romper:
+1. **NO brindes asesoría formal ni te presentes como abogado.**
+2. **NO prometas soluciones ni realices análisis jurídicos complejos.**
+3. **Ofrece solo una explicación general del marco legal aplicable y posibles pasos, de forma clara y neutral.**
+4. **Si la pregunta no tiene relación jurídica clara o no puedes dar una orientación segura, responde con cortesía que el usuario debe acudir a un abogado.**
+5. **Siempre finaliza tu respuesta con esta advertencia obligatoria:**
+   "Recuerda, esta es solo una orientación general y no sustituye la consulta con un abogado profesional o autoridad competente."
+
+Tu objetivo es ayudar al usuario a entender de forma básica qué tipo de derecho está involucrado, qué conceptos legales podrían aplicar, y qué autoridades o profesionales pueden ayudarle.
+
+Sé claro, profesional, breve y evita tecnicismos innecesarios.
+"""
+
 
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": pregunta}
-            ],
-            max_tokens=200,
-            temperature=0.5,
+    model="gpt-4o",  # Mucho mejor comprensión y precisión legal
+    messages=[
+        {"role": "system", "content": prompt_sistema},
+        {"role": "user", "content": pregunta}
+    ],
+    max_tokens=600,  # Aumentado para evitar respuestas incompletas
+    temperature=0.4,  # Menos creatividad, más precisión
+
         )
         
         respuesta_ia = response.choices[0].message.content.strip()
@@ -62,6 +75,11 @@ def chat():
 def serve_service_worker():
     """ Sirve el archivo Service Worker desde la carpeta static. """
     return send_from_directory('static', 'monetization-sw.js')
+
+@app.route("/terminos_condiciones")
+def terminos_condiciones():
+    return render_template("terminos_condiciones.html")
+
 
 
 # --- INICIO DE LA APLICACIÓN ---
